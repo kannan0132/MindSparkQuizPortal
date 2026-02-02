@@ -22,8 +22,9 @@ function Lobby() {
       return;
     }
 
-    // Connect to socket
-    const newSocket = io('http://localhost:3000');
+    // Connect to socket - dynamic URL based on current hostname
+    const socketUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
+    const newSocket = io(socketUrl);
     setSocket(newSocket);
     setIsHost(storedIsHost);
 

@@ -58,9 +58,10 @@ function Home() {
         ))}
       </div>
       <div className="home-content">
+
         <div className="logo-container">
           <h1 className="main-title">
-            <span className="glow">MINDSARK</span>
+            <span className="glow">MINDSPARK</span>
             <span className="subtitle">QUIZ PORTAL</span>
           </h1>
         </div>
@@ -73,24 +74,6 @@ function Home() {
           <p className="intro-text">
             Join a room or create your own to start the adventure!
           </p>
-        </div>
-
-        <div className="features">
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Real-Time</h3>
-            <p>Live updates and instant feedback</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🏆</div>
-            <h3>Competitive</h3>
-            <p>Compete with players worldwide</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🎯</div>
-            <h3>Challenging</h3>
-            <p>Questions that test your knowledge</p>
-          </div>
         </div>
 
         <div className="mode-selection">

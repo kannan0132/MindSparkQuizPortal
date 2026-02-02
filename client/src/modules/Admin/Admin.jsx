@@ -4,14 +4,17 @@ import './Admin.css';
 
 function Admin() {
   const [questions, setQuestions] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'questions', 'users'
   const [analytics, setAnalytics] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
+
   const [formData, setFormData] = useState({
     question: '',
     options: ['', '', '', ''],
     correctAnswer: '',
-    category: 'general', // Default to 'general'
+    category: 'general',
     difficulty: 'medium',
     points: 10,
     timeLimit: 30
@@ -21,13 +24,16 @@ function Admin() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchQuestions();
       fetchAnalytics();
+      if (activeTab === 'questions') fetchQuestions();
+      if (activeTab === 'users') fetchUsers();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeTab]);
 
   const handleAuth = () => {
-    if (adminKey === 'admin123' || adminKey === process.env.REACT_APP_ADMIN_KEY) {
+    const secondaryKey = import.meta.env?.VITE_ADMIN_KEY || 'admin123';
+
+    if (adminKey === 'admin123' || adminKey === secondaryKey) {
       setIsAuthenticated(true);
       sessionStorage.setItem('adminKey', adminKey);
     } else {
@@ -39,11 +45,20 @@ function Admin() {
     try {
       const response = await axios.get('/api/questions');
       setQuestions(response.data);
-      console.log(`Loaded ${response.data.length} questions`);
     } catch (error) {
       console.error('Error fetching questions:', error);
-      const errorMsg = error.response?.data?.message || error.message || 'Unknown error';
-      alert(`Failed to fetch questions: ${errorMsg}\n\nMake sure the server is running on port 3000.`);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/admin/users', {
+        headers: { 'x-admin-key': adminKey || sessionStorage.getItem('adminKey') }
+      });
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      alert('Failed to fetch users');
     }
   };
 
@@ -55,7 +70,6 @@ function Admin() {
       setAnalytics(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      alert('Failed to fetch analytics. Make sure the server is running.');
     }
   };
 
@@ -185,10 +199,30 @@ function Admin() {
       <div className="admin-content">
         <div className="admin-header">
           <h1>Admin Panel</h1>
+          <div className="admin-tabs">
+            <button
+              className={activeTab === 'dashboard' ? 'active' : ''}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Dashboard
+            </button>
+            <button
+              className={activeTab === 'questions' ? 'active' : ''}
+              onClick={() => setActiveTab('questions')}
+            >
+              Questions
+            </button>
+            <button
+              className={activeTab === 'users' ? 'active' : ''}
+              onClick={() => setActiveTab('users')}
+            >
+              Users
+            </button>
+          </div>
           <button onClick={() => setIsAuthenticated(false)}>Logout</button>
         </div>
 
-        {analytics && (
+        {activeTab === 'dashboard' && analytics && (
           <div className="analytics-section">
             <h2>Analytics</h2>
             <div className="analytics-grid">
@@ -208,160 +242,191 @@ function Admin() {
           </div>
         )}
 
-        <div className="questions-section">
-          <div className="section-header">
-            <h2>Questions</h2>
-            <button onClick={() => {
-              setShowAddForm(true);
-              setEditingQuestion(null);
-              setFormData({
-                question: '',
-                options: ['', '', '', ''],
-                correctAnswer: '',
-                category: 'general',
-                difficulty: 'medium',
-                points: 10,
-                timeLimit: 30
-              });
-            }}>
-              Add Question
-            </button>
+        {activeTab === 'users' && (
+          <div className="users-section">
+            <h2>Registered Users</h2>
+            <div className="table-container">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr><td colSpan="3" style={{ textAlign: 'center' }}>No users found</td></tr>
+                  ) : (
+                    users.map(user => (
+                      <tr key={user._id}>
+                        <td>{user.username}</td>
+                        <td>{user.email || 'N/A'}</td>
+                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+        )}
 
-          {showAddForm && (
-            <form onSubmit={handleSubmit} className="question-form">
-              <input
-                type="text"
-                placeholder="Question"
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                required
-              />
+        {activeTab === 'questions' && (
+          <div className="questions-section">
+            <div className="section-header">
+              <h2>Questions</h2>
+              <button onClick={() => {
+                setShowAddForm(true);
+                setEditingQuestion(null);
+                setFormData({
+                  question: '',
+                  options: ['', '', '', ''],
+                  correctAnswer: '',
+                  category: 'general',
+                  difficulty: 'medium',
+                  points: 10,
+                  timeLimit: 30
+                });
+              }}>
+                Add Question
+              </button>
+            </div>
 
-              {formData.options.map((option, index) => (
+            {showAddForm && (
+              <form onSubmit={handleSubmit} className="question-form">
                 <input
-                  key={index}
                   type="text"
-                  placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                  value={option}
-                  onChange={(e) => {
-                    const newOptions = [...formData.options];
-                    newOptions[index] = e.target.value;
-                    // Clear correct answer if it no longer matches
-                    let newCorrectAnswer = formData.correctAnswer;
-                    if (newCorrectAnswer && !newOptions.includes(newCorrectAnswer)) {
-                      newCorrectAnswer = '';
-                    }
-                    setFormData({ ...formData, options: newOptions, correctAnswer: newCorrectAnswer });
-                  }}
+                  placeholder="Question"
+                  value={formData.question}
+                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                   required
                 />
-              ))}
 
-              <select
-                value={formData.correctAnswer}
-                onChange={(e) => setFormData({ ...formData, correctAnswer: e.target.value })}
-                required
-              >
-                <option value="">Select correct answer</option>
-                {formData.options.filter(opt => opt.trim()).map((option, index) => (
-                  <option key={index} value={option}>
-                    {String.fromCharCode(65 + index)}: {option}
-                  </option>
+                {formData.options.map((option, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...formData.options];
+                      newOptions[index] = e.target.value;
+                      // Clear correct answer if it no longer matches
+                      let newCorrectAnswer = formData.correctAnswer;
+                      if (newCorrectAnswer && !newOptions.includes(newCorrectAnswer)) {
+                        newCorrectAnswer = '';
+                      }
+                      setFormData({ ...formData, options: newOptions, correctAnswer: newCorrectAnswer });
+                    }}
+                    required
+                  />
                 ))}
-              </select>
-              {formData.correctAnswer && !formData.options.includes(formData.correctAnswer) && (
-                <p style={{ color: '#ffffff', fontSize: '0.9rem', marginTop: '5px' }}>
-                  ⚠️ Warning: Selected answer doesn't match any option. Please update options or select a different answer.
-                </p>
-              )}
-
-              <div className="form-row">
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="general">General</option>
-                  <option value="science">Science</option>
-                  <option value="history">History</option>
-                  <option value="sports">Sports</option>
-                  <option value="entertainment">Entertainment</option>
-                  <option value="astronomy">Astronomy</option>
-                </select>
 
                 <select
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  value={formData.correctAnswer}
+                  onChange={(e) => setFormData({ ...formData, correctAnswer: e.target.value })}
+                  required
                 >
-                  <option value="easy">Easy</option>
-                  <option value="medium">Medium</option>
-                  <option value="hard">Hard</option>
-                </select>
-
-                <input
-                  type="number"
-                  placeholder="Points"
-                  value={formData.points}
-                  onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
-                  min="1"
-                />
-
-                <input
-                  type="number"
-                  placeholder="Time Limit (seconds)"
-                  value={formData.timeLimit}
-                  onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
-                  min="5"
-                />
-              </div>
-
-              <div className="form-actions">
-                <button type="submit">{editingQuestion ? 'Update' : 'Add'} Question</button>
-                <button type="button" onClick={() => {
-                  setShowAddForm(false);
-                  setEditingQuestion(null);
-                }}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="questions-list">
-            {questions.map((question) => (
-              <div key={question._id} className="question-card">
-                <div className="question-header">
-                  <h3>{question.question}</h3>
-                  <div className="question-meta">
-                    <span className="badge">{question.category}</span>
-                    <span className="badge">{question.difficulty}</span>
-                    <span className="badge">{question.points} pts</span>
-                  </div>
-                </div>
-                <div className="question-options">
-                  {question.options.map((option, index) => (
-                    <div
-                      key={index}
-                      className={`option ${option === question.correctAnswer ? 'correct' : ''}`}
-                    >
+                  <option value="">Select correct answer</option>
+                  {formData.options.filter(opt => opt.trim()).map((option, index) => (
+                    <option key={index} value={option}>
                       {String.fromCharCode(65 + index)}: {option}
-                    </div>
+                    </option>
                   ))}
+                </select>
+                {formData.correctAnswer && !formData.options.includes(formData.correctAnswer) && (
+                  <p style={{ color: '#ffffff', fontSize: '0.9rem', marginTop: '5px' }}>
+                    ⚠️ Warning: Selected answer doesn't match any option. Please update options or select a different answer.
+                  </p>
+                )}
+
+                <div className="form-row">
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="general">General</option>
+                    <option value="science">Science</option>
+                    <option value="history">History</option>
+                    <option value="sports">Sports</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="astronomy">Astronomy</option>
+                  </select>
+
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+
+                  <input
+                    type="number"
+                    placeholder="Points"
+                    value={formData.points}
+                    onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                    min="1"
+                  />
+
+                  <input
+                    type="number"
+                    placeholder="Time Limit (seconds)"
+                    value={formData.timeLimit}
+                    onChange={(e) => setFormData({ ...formData, timeLimit: parseInt(e.target.value) })}
+                    min="5"
+                  />
                 </div>
-                <div className="question-actions">
-                  <button onClick={() => handleEdit(question)}>Edit</button>
-                  <button onClick={() => handleDelete(question._id)} className="delete-btn">
-                    Delete
+
+                <div className="form-actions">
+                  <button type="submit">{editingQuestion ? 'Update' : 'Add'} Question</button>
+                  <button type="button" onClick={() => {
+                    setShowAddForm(false);
+                    setEditingQuestion(null);
+                  }}>
+                    Cancel
                   </button>
                 </div>
-              </div>
-            ))}
+              </form>
+            )}
+
+            <div className="questions-list">
+              {questions.map((question) => (
+                <div key={question._id} className="question-card">
+                  <div className="question-header">
+                    <h3>{question.question}</h3>
+                    <div className="question-meta">
+                      <span className="badge">{question.category}</span>
+                      <span className="badge">{question.difficulty}</span>
+                      <span className="badge">{question.points} pts</span>
+                    </div>
+                  </div>
+                  <div className="question-options">
+                    {question.options.map((option, index) => (
+                      <div
+                        key={index}
+                        className={`option ${option === question.correctAnswer ? 'correct' : ''}`}
+                      >
+                        {String.fromCharCode(65 + index)}: {option}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="question-actions">
+                    <button onClick={() => handleEdit(question)}>Edit</button>
+                    <button onClick={() => handleDelete(question._id)} className="delete-btn">
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
 
 export default Admin;
-

@@ -2,6 +2,7 @@ import express from 'express';
 import Question from '../models/Question.js';
 import GameHistory from '../models/GameHistory.js';
 import Room from '../models/Room.js';
+import Account from '../models/Account.js';
 
 const router = express.Router();
 
@@ -20,27 +21,27 @@ router.post('/questions', isAdmin, async (req, res) => {
   try {
     // Validation
     const { question, options, correctAnswer } = req.body;
-    
+
     if (!question || !question.trim()) {
       return res.status(400).json({ message: 'Question is required' });
     }
-    
+
     if (!options || !Array.isArray(options) || options.length < 2) {
       return res.status(400).json({ message: 'At least 2 options are required' });
     }
-    
+
     if (options.some(opt => !opt || !opt.trim())) {
       return res.status(400).json({ message: 'All options must be filled' });
     }
-    
+
     if (!correctAnswer || !correctAnswer.trim()) {
       return res.status(400).json({ message: 'Correct answer is required' });
     }
-    
+
     if (!options.includes(correctAnswer)) {
       return res.status(400).json({ message: 'Correct answer must match one of the options' });
     }
-    
+
     const questionData = {
       question: question.trim(),
       options: options.map(opt => opt.trim()),
@@ -51,15 +52,15 @@ router.post('/questions', isAdmin, async (req, res) => {
       timeLimit: parseInt(req.body.timeLimit) || 30,
       isActive: true
     };
-    
+
     const newQuestion = new Question(questionData);
     await newQuestion.save();
     res.status(201).json(newQuestion);
   } catch (error) {
     console.error('Error creating question:', error);
     const statusCode = error.name === 'ValidationError' ? 400 : 500;
-    res.status(statusCode).json({ 
-      message: 'Error creating question', 
+    res.status(statusCode).json({
+      message: 'Error creating question',
       error: error.message,
       details: error.errors ? Object.keys(error.errors).map(key => ({
         field: key,
@@ -118,10 +119,27 @@ router.get('/analytics', isAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Analytics error:', error);
-    res.status(500).json({ 
-      message: 'Error fetching analytics', 
+    res.status(500).json({
+      message: 'Error fetching analytics',
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
+// Get all registered users
+router.get('/users', isAdmin, async (req, res) => {
+  try {
+    const users = await Account.find({}, 'username email createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({
+      message: 'Error fetching users',
+      error: error.message
     });
   }
 });

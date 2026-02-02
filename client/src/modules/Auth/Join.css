@@ -7,8 +7,10 @@
   overflow: hidden;
   padding: 20px;
   background: #000000;
+  font-family: 'Outfit', sans-serif;
 }
 
+/* Starry Background */
 .join-container .stars {
   position: absolute;
   width: 100%;
@@ -16,23 +18,133 @@
   top: 0;
   left: 0;
   background-image:
-    radial-gradient(1px 1px at 20% 30%, white, transparent),
+    radial-gradient(1.5px 1.5px at 20% 30%, white, transparent),
     radial-gradient(1px 1px at 60% 70%, white, transparent),
-    radial-gradient(1px 1px at 50% 50%, white, transparent),
+    radial-gradient(1.5px 1.5px at 50% 50%, white, transparent),
     radial-gradient(1px 1px at 80% 10%, white, transparent),
     radial-gradient(2px 2px at 40% 60%, white, transparent),
     radial-gradient(1px 1px at 10% 80%, white, transparent);
   background-repeat: repeat;
   background-size: 300px 300px;
-  animation: float 30s linear infinite;
-  opacity: 0.8;
+  animation: float 60s linear infinite;
+  opacity: 0.9;
+  z-index: 0;
+}
+
+@keyframes float {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 100% 100%;
+  }
 }
 
 .join-content {
   width: 100%;
-  max-width: 500px;
-  z-index: 1;
+  max-width: 450px;
+  /* Slightly wider for better breathing room */
+  z-index: 10;
+  text-align: center;
 }
+
+.join-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #ffffff;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.9),
+    0 0 20px rgba(255, 255, 255, 0.7),
+    0 0 30px rgba(255, 255, 255, 0.5);
+  letter-spacing: 1px;
+}
+
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0 1rem;
+}
+
+.input-group {
+  position: relative;
+}
+
+.join-input {
+  width: 100%;
+  background: #ffffff;
+  border: none;
+  border-radius: 4px;
+  /* Sharper corners as per image */
+  padding: 12px 15px;
+  font-size: 0.95rem;
+  color: #333;
+  outline: none;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.join-input:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+.join-input::placeholder {
+  color: #888;
+}
+
+.join-btn {
+  background: #ffffff;
+  border: none;
+  border-radius: 30px;
+  /* Pill shape for button */
+  padding: 15px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 1rem;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.join-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+}
+
+.join-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error-message {
+  background: rgba(255, 77, 77, 0.2);
+  border: 1px solid rgba(255, 77, 77, 0.5);
+  color: #ff4d4d;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Link styling */
+.auth-link {
+  color: #00f2ff;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.auth-link:hover {
+  color: #ffffff;
+}
+
+/* --- Restored Styles for Join.jsx --- */
 
 .join-card {
   background: rgba(255, 255, 255, 0.05);
@@ -41,24 +153,6 @@
   border-radius: 30px;
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.join-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 30px;
-  color: #ffffff;
-  text-shadow:
-    0 0 10px rgba(255, 255, 255, 0.8),
-    0 0 20px rgba(255, 255, 255, 0.6),
-    0 0 30px rgba(255, 255, 255, 0.4);
-}
-
-.join-form {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
 }
 
 .form-group {
@@ -164,45 +258,6 @@
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
-.error-message {
-  background: rgba(255, 107, 107, 0.2);
-  border: 1px solid rgba(255, 107, 107, 0.5);
-  border-radius: 10px;
-  padding: 15px;
-  color: #ff6b6b;
-  text-align: center;
-  font-weight: 500;
-}
-
-.join-btn {
-  background: #ffffff;
-  border: 2px solid #ffffff;
-  border-radius: 15px;
-  padding: 18px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #000000;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-top: 10px;
-  box-shadow:
-    0 0 20px rgba(255, 255, 255, 0.5),
-    0 10px 30px rgba(255, 255, 255, 0.3);
-}
-
-.join-btn:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 30px rgba(255, 255, 255, 0.8),
-    0 15px 40px rgba(255, 255, 255, 0.5);
-}
-
-.join-btn:active {
-  transform: translateY(0);
-}
-
 .back-btn {
   width: 100%;
   background: transparent;
@@ -224,9 +279,5 @@
 @media (max-width: 768px) {
   .join-card {
     padding: 30px 20px;
-  }
-
-  .join-title {
-    font-size: 2rem;
   }
 }

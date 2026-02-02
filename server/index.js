@@ -12,45 +12,65 @@ import roomRoutes from './routes/rooms.js';
 import questionRoutes from './routes/questions.js';
 import adminRoutes from './routes/admin.js';
 import leaderboardRoutes from './routes/leaderboard.js';
+import authRoutes from './routes/auth.js';
 
 dotenv.config();
 
 const app = express();
 
-const seedIfEmpty = async () => {
+const seedDatabase = async () => {
   try {
-    const count = await Question.countDocuments();
-    if (count === 0) {
-      console.log('🌱 Database is empty, seeding initial questions...');
-      await Question.insertMany(questions);
-      console.log(`✅ Seeded ${questions.length} questions`);
+    const existingQuestions = await Question.find({}, 'question');
+    const existingQuestionTexts = new Set(existingQuestions.map(q => q.question));
+
+    const newQuestions = questions.filter(q => !existingQuestionTexts.has(q.question));
+
+    if (newQuestions.length > 0) {
+      console.log(`🌱 Found ${newQuestions.length} new questions to seed...`);
+      await Question.insertMany(newQuestions);
+      console.log(`✅ Successfully added ${newQuestions.length} new questions.`);
     } else {
-      console.log(`ℹ️ Database already has ${count} questions`);
+      console.log('ℹ️ Database is up to date. No new questions to seed.');
     }
   } catch (error) {
-    console.error('❌ Auto-seed error:', error);
+    console.error('❌ Seeding error:', error);
   }
 };
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174"
+    ],
     methods: ["GET", "POST"]
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Database connection
-connectDB(process.env.MONGODB_URI || 'mongodb://localhost:27017/mindspark-quiz', seedIfEmpty);
+connectDB(process.env.MONGODB_URI || 'mongodb://localhost:27017/mindspark-quiz', seedDatabase);
 
 // Routes
 app.use('/api/rooms', roomRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
