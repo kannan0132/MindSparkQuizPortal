@@ -1,0 +1,103 @@
+# Data Flow Diagrams (DFD) - Mindspark Quiz Portal
+
+This document provides a tiered view of the data flow within the Mindspark Quiz Portal application, from the high-level context to specific functional logic.
+
+## Level 0 DFD: Context Diagram
+The Level 0 DFD shows the system boundary and the interactions with external entities.
+
+```mermaid
+graph LR
+    P[Player] -- "Join Room Request<br/>(Nickname, Room ID)" --> S((Mindspark Quiz Portal))
+    P -- "Submit Answer" --> S
+    S -- "Game State Update<br/>(Questions, Leaderboard)" --> P
+    
+    A[Admin] -- "Question Management<br/>(CRUD Operations)" --> S
+    A -- "Request Analytics & History" --> S
+    S -- "Analytics Data<br/>& Game History" --> A
+```
+
+## Level 1 DFD: Main Processes
+The Level 1 DFD breaks the system down into its primary functional modules and data stores.
+
+```mermaid
+graph TD
+    P[Player] -- "Join Request" --> P1[1.0 Room Management]
+    P1 -- "Store/Validate" --> D2[(D2: Rooms)]
+    P1 -- "Create/Save" --> D1[(D1: Users)]
+    
+    P -- "Answers" --> P2[2.0 Quiz Session Controller]
+    P2 -- "Broadcast State" --> P
+    P2 -- "Fetch Questions" --> D3[(D3: Questions)]
+    P2 -- "Log Session" --> D4[(D4: Game History)]
+    
+    A[Admin] -- "Question CRUD" --> P3[3.0 Question Management]
+    P3 -- "Update" --> D3
+    
+    A -- "View Stats" --> P4[4.0 Analytics & Reporting]
+    P4 -- "Read History" --> D4
+```
+
+## Level 2 DFD: Process 2.0 - Quiz Session Controller
+This level breaks down the real-time quiz execution process.
+
+```mermaid
+graph TD
+    D3[(D3: Questions)] -- "Fetch Set" --> P21[2.1 Session Initialization]
+    P21 -- "Broadcast 1st Question" --> S[Socket.io Stream]
+    
+    S -- "Timer Ticks" --> P22[2.2 Timer Controller]
+    P22 -- "Next Question Event" --> S
+    
+    P[Player] -- "Submit Answer" --> P23[2.3 Answer Processing]
+    P23 -- "Validate & Score" --> D1[(D1: Users)]
+    
+    D1 -- "Current Scores" --> P24[2.4 Leaderboard Aggregator]
+    P24 -- "Broadcast Rankings" --> S
+    S -- "Live Updates" --> P
+```
+
+## Level 3 DFD: Sub-process Details - Real-time Synchronization
+This level focuses on the specific data flow between the Socket Handler and the Player client.
+
+```mermaid
+graph LR
+    subgraph Server
+        SH[Socket Handler]
+        GE[Game Engine]
+    end
+    
+    subgraph Client
+        QC[Quiz Component]
+        LS[Local State]
+    end
+    
+    SH -- "room_data" --> QC
+    SH -- "new_question" --> QC
+    QC -- "update" --> LS
+    
+    QC -- "submit_answer" --> SH
+    SH -- "process" --> GE
+    GE -- "score_update" --> SH
+    SH -- "leaderboard_refresh" --> QC
+```
+
+## Level 4 DFD: Specific Logic - Room Joining & Validation
+This level details the data validation and room joining logic.
+
+```mermaid
+graph TD
+    P[Player] -- "Input: Nickname, RoomID" --> V[Validate Request]
+    V -- "Search ID" --> RD{Room Exists?}
+    RD -- No --> E1[Error: Invalid Room]
+    RD -- Yes --> RN{Nickname Taken?}
+    
+    RN -- Yes --> E2[Error: Name Taken]
+    RN -- No --> RJ[Join Room Process]
+    
+    RJ -- "Reg. User" --> D1[(D1: Users)]
+    RJ -- "Add to List" --> D2[(D2: Rooms)]
+    
+    D1 -- "Success" --> S[Socket: join_room]
+    D2 -- "Updates" --> S
+    S -- "Lobby Data" --> P
+```
